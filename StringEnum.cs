@@ -22,9 +22,8 @@ public abstract record StringEnum<TSelf>(string Value) : IComparable where TSelf
 	public static bool TryParse(string? value, IFormatProvider? _, out TSelf @enum)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(value, nameof(value));
-		@enum = (TSelf)Activator.CreateInstance(typeof(TSelf), value)!;
-		var members = GetMembers();
-		return members.Any(e => e.Value == value);
+		@enum = GetMembers().FirstOrDefault(e => e.Value == value)!;
+		return @enum is not null;
 	}
 
 	public static TSelf Parse(string value, IFormatProvider? formatProvider = null)

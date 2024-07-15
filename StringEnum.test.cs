@@ -9,6 +9,12 @@ public record SampleStringEnum(string Value) : StringEnum<SampleStringEnum>(Valu
 	public static readonly SampleStringEnum Option2 = new("option2");
 }
 
+public record ComplexSampleStringEnum(string Value, int OtherValue) : StringEnum<ComplexSampleStringEnum>(Value)
+{
+	public static readonly ComplexSampleStringEnum Option1 = new("option1", 1);
+	public static readonly ComplexSampleStringEnum Option2 = new("option2", 2);
+}
+
 public class StringEnumTest
 {
 	[Theory]
@@ -50,6 +56,14 @@ public class StringEnumTest
 				_ = @enum.Value;
 			});
 		}
+	}
+
+	[Fact]
+	public void TestParseComplex()
+	{
+		Assert.True(ComplexSampleStringEnum.TryParse("option1", null, out var parsedEnum));
+		Assert.Equal("option1", parsedEnum.Value);
+		Assert.Equal(1, parsedEnum.OtherValue);
 	}
 
 	[Fact]
