@@ -11,8 +11,13 @@ public record SampleStringEnum(string Value) : StringEnum<SampleStringEnum>(Valu
 
 public record ComplexSampleStringEnum(string Value, int OtherValue) : StringEnum<ComplexSampleStringEnum>(Value)
 {
-	public static readonly ComplexSampleStringEnum Option1 = new("option1", 1);
-	public static readonly ComplexSampleStringEnum Option2 = new("option2", 2);
+	public static ComplexSampleStringEnum Option1 => new("option1", 1);
+	public static ComplexSampleStringEnum Option2 => new("option2", 2);
+
+	// Should be ignored by GetMembers
+	public static ComplexSampleStringEnum GetOption() => new("option3", 2);
+
+	public string Mutable { get; set; } = string.Empty;
 }
 
 public class StringEnumTest
@@ -36,6 +41,16 @@ public class StringEnumTest
 		Assert.Equal("option2", all.Last().Value);
 	}
 
+	[Fact]
+	public void TestComplexGetMembers()
+	{
+		var all = ComplexSampleStringEnum.GetMembers().ToArray();
+
+		Assert.Equal(2, all.Length);
+		Assert.Equal("option1", all.First().Value);
+		Assert.Equal("option2", all.Last().Value);
+	}
+
 	[Theory]
 	[InlineData("option1", true)]
 	[InlineData("option2", true)]
@@ -45,15 +60,15 @@ public class StringEnumTest
 		Assert.Equal(valid, SampleStringEnum.TryParse(value, null, out var parsedEnum));
 		if (valid)
 		{
-			Assert.Equal(value, parsedEnum.Value);
-			Assert.Equal(value, SampleStringEnum.Parse(value, null).Value);
+			Assert.Equal(value, parsedEnum!.Value);
+			Assert.Equal(value, SampleStringEnum.Parse(value, null)!.Value);
 		}
 		else
 		{
 			Assert.Throws<ArgumentException>(() =>
 			{
 				var @enum = SampleStringEnum.Parse(value, null);
-				_ = @enum.Value;
+				_ = @enum!.Value;
 			});
 		}
 	}
@@ -62,8 +77,23 @@ public class StringEnumTest
 	public void TestParseComplex()
 	{
 		Assert.True(ComplexSampleStringEnum.TryParse("option1", null, out var parsedEnum));
-		Assert.Equal("option1", parsedEnum.Value);
+		Assert.Equal("option1", parsedEnum!.Value);
 		Assert.Equal(1, parsedEnum.OtherValue);
+	}
+
+	[Fact]
+	public void TestParseNotReturningSameReference()
+	{
+		ComplexSampleStringEnum.TryParse("option1", null, out var parsedEnum1);
+		ComplexSampleStringEnum.TryParse("option1", null, out var parsedEnum2);
+
+		parsedEnum1!.Mutable = "test1";
+		parsedEnum2!.Mutable = "test2";
+
+		Assert.NotEqual(parsedEnum1, parsedEnum2);
+		Assert.NotEqual(parsedEnum1.Mutable, parsedEnum2.Mutable);
+		Assert.Equal("test1", parsedEnum1.Mutable);
+		Assert.Equal("test2", parsedEnum2.Mutable);
 	}
 
 	[Fact]

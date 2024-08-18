@@ -17,16 +17,28 @@ public abstract record StringEnum<TSelf>(string Value) : IComparable where TSelf
 				yield return @enum;
 			}
 		}
+
+		foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
+		{
+			if (property.GetMethod != null && property.GetMethod.IsStatic && property.GetMethod.IsPublic)
+			{
+				var value = typeof(TSelf).IsAssignableFrom(property.PropertyType) is false ? null : property.GetValue(null);
+				if (value is TSelf @enum)
+				{
+					yield return @enum;
+				}
+			}
+		}
 	}
 
-	public static bool TryParse(string? value, IFormatProvider? _, out TSelf @enum)
+	public static bool TryParse(string? value, IFormatProvider? _, out TSelf? @enum)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(value, nameof(value));
-		@enum = GetMembers().FirstOrDefault(e => e.Value == value)!;
+		@enum = GetMembers().FirstOrDefault(e => e.Value == value) is TSelf result ? result with { } : null;
 		return @enum is not null;
 	}
 
-	public static TSelf Parse(string value, IFormatProvider? formatProvider = null)
+	public static TSelf? Parse(string value, IFormatProvider? formatProvider = null)
 	{
 		var valid = TryParse(value, formatProvider, out var @enum);
 		if (valid is false)
@@ -46,7 +58,7 @@ public abstract record StringEnum<TSelf>(string Value) : IComparable where TSelf
 
 	public class JsonConverter : JsonConverter<TSelf>
 	{
-		public sealed override TSelf Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => Parse(reader.GetString() ?? "", null);
+		public sealed override TSelf? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => Parse(reader.GetString() ?? "", null);
 
 		public sealed override void Write(Utf8JsonWriter writer, TSelf value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
 	}
