@@ -126,15 +126,55 @@ public class StringEnumTest
 	[Fact]
 	public void TestJsonConverter()
 	{
-		var options = new JsonSerializerOptions
+		JsonSerializerOptions options = new()
 		{
 			Converters = { new SampleStringEnum.JsonConverter() }
 		};
 
-		var json = JsonSerializer.Serialize(SampleStringEnum.Option1, options);
-		Assert.Equal("\"option1\"", json);
+		Assert.Equal("\"option1\"", JsonSerializer.Serialize(SampleStringEnum.Option1, options));
+		Assert.Equal(SampleStringEnum.Option2, JsonSerializer.Deserialize<SampleStringEnum>("\"option2\"", options));
 
-		var @enum = JsonSerializer.Deserialize<SampleStringEnum>("\"option2\"", options);
-		Assert.Equal(SampleStringEnum.Option2, @enum);
+		Assert.Equal("""{"Value":"option1"}""", JsonSerializer.Serialize(SampleStringEnum.Option1));
+		Assert.Equal(SampleStringEnum.Option1, JsonSerializer.Deserialize<SampleStringEnum>("""{"Value":"option1"}"""));
+	}
+
+	private record EnumConvertedByFactory(string Value, int Number) : StringEnum<EnumConvertedByFactory>(Value)
+	{
+		public static readonly EnumConvertedByFactory Option1 = new("option1", 1);
+		public static readonly EnumConvertedByFactory Option2 = new("option2", 2);
+	}
+
+	[Fact]
+	public void TestJsonConverterFactory()
+	{
+		JsonSerializerOptions options = new()
+		{
+			Converters = { new StringEnumConverterFactory() }
+		};
+
+		Assert.Equal("\"option1\"", JsonSerializer.Serialize(EnumConvertedByFactory.Option1, options));
+		Assert.Equal(EnumConvertedByFactory.Option1, JsonSerializer.Deserialize<EnumConvertedByFactory>("\"option1\"", options));
+
+		Assert.Equal("""{"Number":1,"Value":"option1"}""", JsonSerializer.Serialize(EnumConvertedByFactory.Option1));
+		Assert.Equal(EnumConvertedByFactory.Option1, JsonSerializer.Deserialize<EnumConvertedByFactory>("""{"Number":1,"Value":"option1"}"""));
+	}
+
+	[StringEnumConverterFactory.Skip]
+	private record EnumIgnoredByFactory(string Value, int Number) : StringEnum<EnumConvertedByFactory>(Value)
+	{
+		public static readonly EnumIgnoredByFactory Option1 = new("option1", 1);
+		public static readonly EnumIgnoredByFactory Option2 = new("option2", 2);
+	}
+
+	[Fact]
+	public void TestJsonConverterFactorySkip()
+	{
+		JsonSerializerOptions options = new()
+		{
+			Converters = { new StringEnumConverterFactory() }
+		};
+
+		Assert.Equal("""{"Number":1,"Value":"option1"}""", JsonSerializer.Serialize(EnumIgnoredByFactory.Option1, options));
+		Assert.Equal(EnumIgnoredByFactory.Option1, JsonSerializer.Deserialize<EnumIgnoredByFactory>("""{"Number":1,"Value":"option1"}"""));
 	}
 }

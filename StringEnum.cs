@@ -56,10 +56,5 @@ public abstract record StringEnum<TSelf>(string Value) : IComparable where TSelf
 	public int CompareTo(object? obj) => CompareTo(obj is TSelf other ? other : null);
 	public int CompareTo(TSelf? other) => other is null ? 1 : string.Compare(Value, other.Value, StringComparison.Ordinal);
 
-	public class JsonConverter : JsonConverter<TSelf>
-	{
-		public sealed override TSelf? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => Parse(reader.GetString() ?? "", null);
-
-		public sealed override void Write(Utf8JsonWriter writer, TSelf value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
-	}
+	public class JsonConverter : StringEnumJsonConverter<TSelf> { }
 }
